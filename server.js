@@ -30,6 +30,8 @@ io.on('connection', (socket) => {
       socket.join(sessionId);
       socket.emit('joined', sessionId);
        // Picking a random value
+
+       
     socket.on('pick-random-value', (randomValue) => {
       io.to(sessionId).emit('random-value-picked', randomValue);
     });
