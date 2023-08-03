@@ -101,6 +101,7 @@ nav {
 }
 
 
+
   </style>
 </head>
 <body>
@@ -123,9 +124,9 @@ nav {
 
 
   <script>
-     const sessionId = window.location.pathname.split('/').pop().trim().toLowerCase();
+     const sessionId = window.location.pathname.split('/').pop().trim();
   const socket = io();
-  
+
   socket.emit('join', sessionId);
   // Reload the page when a new word is submitted to the session
   socket.on('new-word', () => {

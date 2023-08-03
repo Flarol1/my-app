@@ -6,11 +6,19 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+const path = require('path');
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 
 io.on('connection', (socket) => {
   socket.on('create', () => {
-    const sessionId = Math.random().toString(36).substr(2, 9);
+    const words = ['Jon', 'Andy', 'Tom', 'Dylan', 'Scotty', 'Gunnar', 'Cameron', 'Anthony',' Zack', 'Ren'];
+    const sessionId = words[Math.floor(Math.random() * words.length)];
     sessions[sessionId] = { users: [] };
     socket.join(sessionId);
     socket.emit('created', sessionId);
@@ -21,6 +29,10 @@ io.on('connection', (socket) => {
     if (sessions[sessionId]) {
       socket.join(sessionId);
       socket.emit('joined', sessionId);
+       // Picking a random value
+    socket.on('pick-random-value', (randomValue) => {
+      io.to(sessionId).emit('random-value-picked', randomValue);
+    });
     } else {
       socket.emit('error', 'Session not found.');
     }
@@ -42,17 +54,28 @@ io.on('connection', (socket) => {
     } else {
       socket.emit('error', 'Session not found.');
     }
+
+    
+  });
+  socket.on('clear-words', ({ sessionId }) => {
+    if (sessions[sessionId]) {
+      sessions[sessionId].users = []; // Clear the users (words) for this session
+      io.to(sessionId).emit('words-cleared'); // Notify all connected clients
+    } else {
+      socket.emit('error', 'Session not found.');
+    }
   });
 
-
-});
+  
+  });
 const sessions = {};
 // Store sessions in an object, with each session ID as a key
 app.use(express.static('public'));
 
+
 // Send session.html when accessing /session/:id
 app.get('/session/:id', (req, res) => {
-  res.sendFile(__dirname + '/public/session.html');
+  res.sendFile(__dirname + '/session.html');
 });
 
 // Fetch values for a specific session

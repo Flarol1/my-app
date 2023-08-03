@@ -77,10 +77,18 @@
       socket.emit('create');
     });
 
+    document.getElementById('sessionId').addEventListener('input', (event) => {
+  const input = event.target;
+  if (input.value.length > 0) {
+    input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1);
+  }
+});
+
     socket.on('created', (sessionId) => {
       const sessionIdDisplay = document.getElementById('sessionIdDisplay');
       sessionIdDisplay.textContent = 'Session created. Session ID: ' + sessionId;
       sessionIdDisplay.style.display = 'block'; // Show the div
+        document.getElementById('sessionId').value = sessionId;
     });
 
     document.getElementById('joinSession').addEventListener('click', () => {
