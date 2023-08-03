@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session Details</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+
+.container {
+      max-width: 400px; /* Container width */
+      margin: 0 auto; /* Centering the container */
+    }
+
+
+
+nav {
+      
+    
+      padding: 10px;
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.7); /* Lighter shadow color */
+      max-width: 400px;
+      margin: auto; 
+      border-radius: 4px 4px 0 0; //* Centering the nav */
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column; /* Stacking vertically */
+      align-items: center; /* Center vertically */
+      justify-content: center; /* Center horizontally */
+      min-height: 100vh; /* Full viewport height */
+    }
+    #values, #newWordForm {
+      max-width: 400px; /* Matching width */
+    }
+    #values {
+      background-color: #fafafa;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      flex: 1;
+      min-height: 100px;
+  max-height: 500px; /* or whatever maximum you like */
+  overflow-y: auto; 
+  border-radius: 0 0 4px 4px;/* Allow scrolling if the content exceeds the max height */
+    }
+    #wordsList {
+      list-style-type: none; /* Remove default bullets */
+      padding: 0;
+    }
+    #wordsList li {
+      background: linear-gradient(90deg, #74ebd5 0%, #acb6e5 100%);
+      color: white;
+      padding: 10px;
+      margin: 5px 0;
+      font-weight: bold;
+      border-radius: 5px;
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #randomValue {
+  display: none; /* Initially hidden */
+  background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  padding: 15px;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: bold;
+  margin-top: 10px;
+  opacity: 0; /* Start fully transparent */
+  transition: opacity 1s; /* 1-second transition on opacity */
+}
+
+#sessionNameBox {
+  background-color: #555;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.7);
+  max-width: 400px;
+  margin: 10px auto; /* Center the box */
+  border-radius: 10px;
+}
+
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <a href="/">Home Page</a>
+    </nav>
+    <div id="sessionNameBox"></div>
+    <div id="values">
+      
+    <button id="randomButton">Pick Random Value</button>
+    <button id="clearButton">Clear List</button>
+    <div id="randomValue"></div>
+    <ul id="wordsList"></ul>
+  </div>
+  <div id="newWordForm">
+    <input type="text" id="newWordInput" placeholder="Enter a new word">
+    <button id="submitNewWordButton">Add New Word</button>
+  </div>
+
+
+  <script>
+     const sessionId = window.location.pathname.split('/').pop().trim().toLowerCase();
+  const socket = io();
+  
+  socket.emit('join', sessionId);
+  // Reload the page when a new word is submitted to the session
+  socket.on('new-word', () => {
+    window.location.reload();
+  });
+
+  socket.on('joined', (sessionId) => {
+      const sessionNameBox = document.getElementById('sessionNameBox');
+      sessionNameBox.textContent = 'Session: ' + sessionId;
+  });
+
+  document.getElementById('submitNewWordButton').addEventListener('click', () => {
+  const newWord = document.getElementById('newWordInput').value;
+  if (newWord.trim() === '') {
+    alert('Please enter a word!');
+    return;
+  }
+  // Emit an event to the server with the new word
+  socket.emit('add-word', { sessionId, word: newWord });
+  // Clear the input field
+  document.getElementById('newWordInput').value = '';
+});
+
+
+
+socket.on('words-cleared', () => {
+  // Clear the words from the view
+  const wordsList = document.getElementById('wordsList'); // Adjust the ID as per your HTML
+  wordsList.innerHTML = '';
+});
+ 
+  fetch(`/session/${sessionId}/values`)
+    .then(res => res.json())
+    .then(words => {
+      const wordsList = document.getElementById('wordsList');
+      words.forEach(word => {
+        const li = document.createElement('li');
+        li.textContent = word;
+        wordsList.appendChild(li);
+        console.log(word)
+
+      });
+// When the random value button is clicked
+document.getElementById('randomButton').addEventListener('click', () => {
+  const randomWord = words[Math.floor(Math.random() * words.length)];
+  socket.emit('pick-random-value', randomWord);
+
+});
+
+// When the server sends the random value
+socket.on('random-value-picked', (randomWord) => {
+  const randomValueDiv = document.getElementById('randomValue');
+  randomValueDiv.textContent = 'The Winner Is: ' + randomWord;
+  randomValueDiv.style.display = 'block';
+  setTimeout(() => {
+    randomValueDiv.style.opacity = 1; // Fade in
+  }, 100);
+});
+
+
+socket.on('enable-random-button', () => {
+  randomButton.disabled = false; 
+});
+   
+     document.getElementById('clearButton').addEventListener('click', () => {
+    // Emit an event to the server to clear the words for this session
+    socket.emit('clear-words', { sessionId });
+    window.location.reload();
+
+  });
+        
+      });
+
+      
+  </script>
+</body>
+</html>
